@@ -3,74 +3,106 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong Solitaire</title>
+<title>Patootie Mahjong</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #1a1208; min-height: 100vh; color: #f0e8d0; }
-  #app { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+  body { font-family: system-ui, sans-serif; background: #1a0a2e; min-height: 100vh; color: #f0e8ff; }
+  #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
   #header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 12px; }
-  h1 { font-size: 22px; font-weight: 600; color: #f0c060; letter-spacing: 0.02em; }
-  #stats { display: flex; gap: 20px; font-size: 13px; color: #b0a080; }
-  #stats strong { color: #f0e8d0; }
+  h1 { font-size: 26px; font-weight: 700; color: #e0a0ff; letter-spacing: 0.04em; }
+  h1 span { color: #ff80cc; }
+  #stats { display: flex; gap: 20px; font-size: 13px; color: #9080b0; }
+  #stats strong { color: #f0e8ff; }
   #controls { display: flex; gap: 8px; }
   button {
-    cursor: pointer; border: 1px solid #6a5030; background: #2e1e08;
-    color: #f0e0b0; border-radius: 8px; padding: 7px 16px;
+    cursor: pointer; border: 1px solid #5a3080; background: #2a1040;
+    color: #e0c0ff; border-radius: 8px; padding: 7px 16px;
     font-size: 13px; font-weight: 500; transition: background 0.15s;
   }
-  button:hover { background: #3e2a10; }
+  button:hover { background: #3a1860; }
   button:active { transform: scale(0.97); }
   #board-wrap { overflow: auto; padding: 1rem 0; }
   #board { position: relative; margin: 0 auto; }
+
   .tile {
     position: absolute;
     width: 46px; height: 58px;
-    border-radius: 7px;
-    border: 1.5px solid #8a7050;
-    background: #f5efe0;
+    border-radius: 8px;
+    border: 1.5px solid #9060c0;
+    background: #f8f0ff;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: #1a1208;
-    font-weight: 500;
-    box-shadow: 2px 4px 0px #9a7050, 3px 6px 0px rgba(0,0,0,0.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 700;
+    box-shadow: 2px 4px 0px #6030a0, 3px 6px 0px rgba(0,0,0,0.4);
     transition: box-shadow 0.12s, transform 0.12s, filter 0.12s;
     line-height: 1;
+    gap: 1px;
   }
-  .tile.red-suit { color: #b03020; }
-  .tile.green-suit { color: #1a7a30; }
-  .tile.blocked { filter: brightness(0.7) saturate(0.6); cursor: not-allowed; }
+  .tile .letter { font-size: 20px; color: #2a0a4a; }
+  .tile .label { font-size: 7px; font-weight: 600; letter-spacing: 0.04em; color: #9060c0; text-transform: uppercase; }
+
+  /* suit colors */
+  .tile.suit-patootie .letter { color: #b02080; }
+  .tile.suit-patootie .label { color: #d060a0; }
+  .tile.suit-manon .letter { color: #1060c0; }
+  .tile.suit-manon .label { color: #4090e0; }
+  .tile.suit-heart .letter { color: #c03030; }
+  .tile.suit-heart .label { color: #e06060; }
+  .tile.suit-star .letter { color: #806000; }
+  .tile.suit-star .label { color: #c09020; }
+  .tile.suit-bonus .letter { font-size: 18px; color: #207040; }
+  .tile.suit-bonus .label { color: #409060; }
+
+  .tile.blocked { filter: brightness(0.65) saturate(0.5); cursor: not-allowed; }
   .tile.selected {
-    background: #c8e8ff; border-color: #378ADD;
-    box-shadow: 2px 4px 0px #1560a0, 3px 6px 0px rgba(0,0,0,0.35), 0 0 0 2px #378ADD88;
+    background: #e8d0ff; border-color: #a040ff;
+    box-shadow: 2px 4px 0px #7020c0, 3px 6px 0px rgba(0,0,0,0.35), 0 0 0 2px #a040ff88;
     transform: translateY(-3px); z-index: 9999 !important;
   }
-  .tile:not(.blocked):not(.matched):hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .tile:not(.blocked):not(.matched):hover { transform: translateY(-2px); filter: brightness(1.06); }
   .tile.matched { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .tile.hint { background: #c8ffe0 !important; border-color: #1D9E75 !important; box-shadow: 2px 4px 0px #0f6e56, 3px 6px 0px rgba(0,0,0,0.3), 0 0 0 2px #1D9E7566 !important; transform: translateY(-2px) !important; }
-  #msg { text-align: center; padding: 0.8rem 1rem; font-size: 15px; color: #c0b090; min-height: 44px; }
-  #msg.win { color: #f0c060; font-size: 18px; font-weight: 600; }
+  .tile.hint {
+    background: #d0ffe8 !important; border-color: #20b070 !important;
+    box-shadow: 2px 4px 0px #0f7050, 3px 6px 0px rgba(0,0,0,0.3), 0 0 0 2px #20b07066 !important;
+    transform: translateY(-2px) !important;
+  }
+
+  #msg { text-align: center; padding: 0.8rem 1rem; font-size: 15px; color: #b090d0; min-height: 44px; }
+  #msg.win { color: #ff80cc; font-size: 18px; font-weight: 700; }
   #msg.fail { color: #e07050; }
-  .hosting-box { margin-top: 2rem; border: 1px solid #4a3820; border-radius: 10px; padding: 1.2rem 1.5rem; background: #241508; }
-  .hosting-box h2 { font-size: 15px; font-weight: 600; color: #f0c060; margin-bottom: 0.5rem; }
-  .hosting-box p { font-size: 13px; color: #b0a080; line-height: 1.6; }
-  .hosting-box a { color: #60b8ff; }
+
+  #legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9080b0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="header">
-    <h1>Mahjong Solitaire</h1>
-    <div id="stats">
-      Tiles left: <strong id="stat-tiles">144</strong>
-      &nbsp;|&nbsp; Matches: <strong id="stat-matches">0</strong>
-      &nbsp;|&nbsp; Time: <strong id="stat-time">0:00</strong>
+    <div>
+      <h1>Patootie <span>Mahjong</span></h1>
+      <div id="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#b02080"></div> PATOOTIE suit</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1060c0"></div> MANON suit</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c03030"></div> Hearts</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#806000"></div> Stars</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#207040"></div> Bonus</div>
+      </div>
     </div>
-    <div id="controls">
-      <button id="btn-hint">Hint</button>
-      <button id="btn-undo">Undo</button>
-      <button id="btn-new">New Game</button>
+    <div>
+      <div id="stats" style="margin-bottom:8px;">
+        Tiles left: <strong id="stat-tiles">-</strong>
+        &nbsp;|&nbsp; Matches: <strong id="stat-matches">0</strong>
+        &nbsp;|&nbsp; Time: <strong id="stat-time">0:00</strong>
+      </div>
+      <div id="controls" style="justify-content:flex-end;display:flex;">
+        <button id="btn-hint">Hint</button>
+        <button id="btn-undo">Undo</button>
+        <button id="btn-new">New Game</button>
+      </div>
     </div>
   </div>
+
   <div id="board-wrap">
     <div id="board"></div>
   </div>
@@ -78,72 +110,67 @@
 </div>
 
 <script>
-const BAMBOO = ['1b','2b','3b','4b','5b','6b','7b','8b','9b'];
-const CHARS  = ['1c','2c','3c','4c','5c','6c','7c','8c','9c'];
-const CIRCLES= ['1o','2o','3o','4o','5o','6o','7o','8o','9o'];
-const WINDS  = ['East','West','Nth','Sth'];
-const DRAGONS= ['中','發','白'];
-const FLOWERS= ['Fl1','Fl2','Fl3','Fl4'];
-const SEASONS= ['Spr','Sum','Aut','Win'];
-
-const BAMBOO_DISP = ['一竹','二竹','三竹','四竹','五竹','六竹','七竹','八竹','九竹'];
-const CHARS_DISP  = ['一','二','三','四','五','六','七','八','九'];
-const CIRCLES_DISP= ['①','②','③','④','⑤','⑥','⑦','⑧','⑨'];
-const WINDS_DISP  = ['東','西','北','南'];
-const DRAGONS_DISP= ['中','發','白'];
-const FLOWERS_DISP= ['梅','蘭','菊','竹'];
-const SEASONS_DISP= ['春','夏','秋','冬'];
+// ── Tile definitions ─────────────────────────────────────────────────────────
+// PATOOTIE suit: 8 letters × 4 copies = 32 tiles
+const PATOOTIE = ['P','A','T','O','O','T','I','E'];
+// MANON suit: 5 letters × 4 copies = 20 tiles  (M,A,N,O,N — duplicates match)
+const MANON    = ['M','A','N','O','N'];
+// Hearts: ♥ symbols 1-9 × 4 = 36 tiles
+const HEARTS   = ['♥1','♥2','♥3','♥4','♥5','♥6','♥7','♥8','♥9'];
+// Stars: ★ symbols 1-9 × 4 = 36 tiles
+const STARS    = ['★1','★2','★3','★4','★5','★6','★7','★8','★9'];
+// Bonus (flowers/seasons style — match any within group): 4+4 = 8 tiles
+const FLOWERS  = ['🌸','🌺','🌼','🌻'];
+const GEMS     = ['💎','💜','✨','🔮'];
 
 function makePool(){
-  const pool = [];
-  BAMBOO.forEach((k,i)=>{ for(let n=0;n<4;n++) pool.push({key:k,disp:BAMBOO_DISP[i],suit:'bamboo'}); });
-  CHARS.forEach((k,i)=>{ for(let n=0;n<4;n++) pool.push({key:k,disp:CHARS_DISP[i],suit:'chars'}); });
-  CIRCLES.forEach((k,i)=>{ for(let n=0;n<4;n++) pool.push({key:k,disp:CIRCLES_DISP[i],suit:'circles'}); });
-  WINDS.forEach((k,i)=>{ for(let n=0;n<4;n++) pool.push({key:k,disp:WINDS_DISP[i],suit:'wind'}); });
-  DRAGONS.forEach((k,i)=>{ for(let n=0;n<4;n++) pool.push({key:k,disp:DRAGONS_DISP[i],suit:'dragon'}); });
-  FLOWERS.forEach((k,i)=>{ pool.push({key:'flower',disp:FLOWERS_DISP[i],suit:'flower'}); });
-  SEASONS.forEach((k,i)=>{ pool.push({key:'season',disp:SEASONS_DISP[i],suit:'season'}); });
+  const pool=[];
+  // PATOOTIE — letter at index i matches same index (so both 'T' at index 2 match each other, both 'O' at 3&4...)
+  // We pair by position so T(idx2) matches T(idx2), O(idx3) matches O(idx3), etc.
+  PATOOTIE.forEach((l,i)=>{
+    for(let n=0;n<4;n++) pool.push({key:'pat_'+i, disp:l, sub:'patootie', suit:'suit-patootie'});
+  });
+  // MANON — same approach, pair by position
+  MANON.forEach((l,i)=>{
+    for(let n=0;n<4;n++) pool.push({key:'man_'+i, disp:l, sub:'manon', suit:'suit-manon'});
+  });
+  // Hearts
+  HEARTS.forEach((h,i)=>{
+    for(let n=0;n<4;n++) pool.push({key:'heart_'+i, disp:h[1], sub:'♥', suit:'suit-heart'});
+  });
+  // Stars
+  STARS.forEach((s,i)=>{
+    for(let n=0;n<4;n++) pool.push({key:'star_'+i, disp:s[1], sub:'★', suit:'suit-star'});
+  });
+  // Bonus — flowers match any flower, gems match any gem
+  FLOWERS.forEach(f=>pool.push({key:'flower', disp:f, sub:'flower', suit:'suit-bonus'}));
+  GEMS.forEach(g=>pool.push({key:'gem', disp:g, sub:'gem', suit:'suit-bonus'}));
   return pool;
 }
 
 function sameTile(a,b){
-  if(a.suit==='flower'&&b.suit==='flower') return true;
-  if(a.suit==='season'&&b.suit==='season') return true;
+  if(a.key==='flower'&&b.key==='flower') return true;
+  if(a.key==='gem'&&b.key==='gem') return true;
   return a.key===b.key;
 }
 
-// Classic turtle layout: [layer, row, col]
+// ── Layout (turtle) ──────────────────────────────────────────────────────────
 const LAYOUT=[];
 (function(){
-  // Layer 0: 8 rows x 14 cols (not all filled — standard mahjong turtle)
-  const base=[
-    [2,12],[0,13],[1,13],[2,13],[3,13],[4,13],[5,13],[6,13],[7,13],[8,13],[9,13],[10,13],[11,13],[12,13],
-  ];
-  // Simpler approach: define rows per layer
   function row(l,r,c0,c1){ for(let c=c0;c<=c1;c++) LAYOUT.push([l,r,c]); }
-  // Layer 0
   for(let r=0;r<8;r++) row(0,r,0,13);
-  // Layer 0 bonus: flanking tiles
-  LAYOUT.push([0,3,-1]); LAYOUT.push([0,4,-1]);
-  LAYOUT.push([0,3,14]); LAYOUT.push([0,4,14]);
-  // Layer 1
+  LAYOUT.push([0,3,-1],[0,4,-1],[0,3,14],[0,4,14]);
   for(let r=1;r<7;r++) row(1,r,1,12);
-  // Layer 2
   for(let r=2;r<6;r++) row(2,r,2,11);
-  // Layer 3
   for(let r=2;r<6;r++) row(3,r,3,10);
-  // Layer 4
   for(let r=3;r<5;r++) row(4,r,4,9);
-  // Layer 5 (center)
   for(let r=3;r<5;r++) row(5,r,5,8);
-  // Layer 6
-  LAYOUT.push([6,3,6]); LAYOUT.push([6,3,7]);
-  LAYOUT.push([6,4,6]); LAYOUT.push([6,4,7]);
-  // Top
-  LAYOUT.push([7,3,6]); LAYOUT.push([7,4,6]);
+  LAYOUT.push([6,3,6],[6,3,7],[6,4,6],[6,4,7]);
+  LAYOUT.push([7,3,6],[7,4,6]);
 })();
 
-const TOTAL = LAYOUT.length;
+const TILE_W=50, TILE_H=62, OFF=6;
+let tiles=[], selected=null, history=[], matches=0, timer=0, timerInt=null;
 
 function shuffle(arr){
   for(let i=arr.length-1;i>0;i--){
@@ -152,9 +179,6 @@ function shuffle(arr){
   }
   return arr;
 }
-
-const TILE_W=50, TILE_H=62, OFF=6;
-let tiles=[], selected=null, history=[], matches=0, timer=0, timerInt=null;
 
 function isBlocked(t){
   if(t.matched) return true;
@@ -168,13 +192,14 @@ function buildBoard(){
   const board=document.getElementById('board');
   board.innerHTML='';
   const pool=shuffle(makePool()).slice(0,LAYOUT.length);
-  // pad if needed
-  while(pool.length<LAYOUT.length) pool.push(pool[pool.length-1]);
+  while(pool.length<LAYOUT.length) pool.push(pool[pool.length%pool.length]);
+
   tiles=LAYOUT.map((pos,i)=>({
-    id:i,layer:pos[0],row:pos[1],col:pos[2],
-    key:pool[i].key,disp:pool[i].disp,suit:pool[i].suit,
-    matched:false,el:null
+    id:i, layer:pos[0], row:pos[1], col:pos[2],
+    key:pool[i].key, disp:pool[i].disp, sub:pool[i].sub, suit:pool[i].suit,
+    matched:false, el:null
   }));
+
   const minC=Math.min(...LAYOUT.map(p=>p[2]));
   const maxC=Math.max(...LAYOUT.map(p=>p[2]));
   const maxR=Math.max(...LAYOUT.map(p=>p[1]));
@@ -182,14 +207,21 @@ function buildBoard(){
   const bw=(maxC-minC+2)*TILE_W+maxL*OFF+40;
   const bh=(maxR+2)*TILE_H+maxL*OFF+40;
   board.style.width=bw+'px'; board.style.height=bh+'px';
+
   tiles.forEach(t=>{
     const el=document.createElement('div');
-    let cls='tile';
-    if(['dragon','wind'].includes(t.suit)) cls+=' red-suit';
-    if(t.suit==='flower'||t.suit==='season') cls+=' green-suit';
-    el.className=cls;
-    el.textContent=t.disp;
-    el.style.fontSize=t.disp.length>2?'11px':'16px';
+    el.className='tile '+t.suit;
+    // letter
+    const letterEl=document.createElement('div');
+    letterEl.className='letter';
+    letterEl.textContent=t.disp;
+    // sublabel
+    const labelEl=document.createElement('div');
+    labelEl.className='label';
+    labelEl.textContent=t.sub;
+    el.appendChild(letterEl);
+    el.appendChild(labelEl);
+
     const x=(t.col-minC)*TILE_W+t.layer*OFF+20;
     const y=t.row*TILE_H-t.layer*OFF+20;
     el.style.left=x+'px'; el.style.top=y+'px';
@@ -198,6 +230,7 @@ function buildBoard(){
     board.appendChild(el);
     t.el=el;
   });
+
   selected=null; history=[]; matches=0;
   document.getElementById('stat-matches').textContent='0';
   document.getElementById('stat-tiles').textContent=tiles.length;
@@ -228,9 +261,9 @@ function clickTile(t){
     document.getElementById('stat-tiles').textContent=tiles.filter(x=>!x.matched).length;
     selected=null; updateAll();
     const left=tiles.filter(x=>!x.matched).length;
-    if(left===0){ clearInterval(timerInt); setMsg('🎉 You cleared the board! Congratulations!','win'); return; }
-    if(!hasMoves()){ clearInterval(timerInt); setMsg('No more moves available. Try a new game!','fail'); return; }
-    setMsg('Match! Keep going.','');
+    if(left===0){ clearInterval(timerInt); setMsg('🎉 You cleared the board! Patootie forever!','win'); return; }
+    if(!hasMoves()){ clearInterval(timerInt); setMsg('No more moves — start a new game!','fail'); return; }
+    setMsg('Nice match! Keep going ✨','');
   } else {
     selected=t; updateAll();
     setMsg('No match — try a different tile.','');
@@ -254,13 +287,13 @@ function doHint(){
           t.el.classList.add('hint');
           setTimeout(()=>t.el.classList.remove('hint'),1600);
         });
-        setMsg('Hint: the highlighted tiles match!','');
+        setMsg('Hint: those two match!','');
         return;
       }
   setMsg('No moves left — start a new game!','fail');
 }
 
-function setMsg(txt, cls){
+function setMsg(txt,cls){
   const el=document.getElementById('msg');
   el.textContent=txt; el.className=cls||'';
 }

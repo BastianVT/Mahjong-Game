@@ -5,323 +5,588 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patootie Mahjong</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #1a0a2e; min-height: 100vh; color: #f0e8ff; }
-  #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
-  #header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 12px; }
-  h1 { font-size: 26px; font-weight: 700; color: #e0a0ff; letter-spacing: 0.04em; }
-  h1 span { color: #ff80cc; }
-  #stats { display: flex; gap: 20px; font-size: 13px; color: #9080b0; }
-  #stats strong { color: #f0e8ff; }
-  #controls { display: flex; gap: 8px; }
-  button {
-    cursor: pointer; border: 1px solid #5a3080; background: #2a1040;
-    color: #e0c0ff; border-radius: 8px; padding: 7px 16px;
-    font-size: 13px; font-weight: 500; transition: background 0.15s;
-  }
-  button:hover { background: #3a1860; }
-  button:active { transform: scale(0.97); }
-  #board-wrap { overflow: auto; padding: 1rem 0; }
-  #board { position: relative; margin: 0 auto; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #12082a; min-height: 100vh; color: #f0e8ff; }
+#app { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem; }
+h1 { font-size: 22px; font-weight: 700; color: #e0a0ff; }
+h1 span { color: #ff80cc; }
 
-  .tile {
-    position: absolute;
-    width: 46px; height: 58px;
-    border-radius: 8px;
-    border: 1.5px solid #9060c0;
-    background: #f8f0ff;
-    cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-weight: 700;
-    box-shadow: 2px 4px 0px #6030a0, 3px 6px 0px rgba(0,0,0,0.4);
-    transition: box-shadow 0.12s, transform 0.12s, filter 0.12s;
-    line-height: 1;
-    gap: 1px;
-  }
-  .tile .letter { font-size: 20px; color: #2a0a4a; }
-  .tile .label { font-size: 7px; font-weight: 600; letter-spacing: 0.04em; color: #9060c0; text-transform: uppercase; }
+#table { display: grid; grid-template-areas: ". top ." "left center right" ". bottom ."; grid-template-columns: 220px 1fr 220px; gap: 8px; margin-top: 10px; }
+#area-top    { grid-area: top; }
+#area-left   { grid-area: left; }
+#area-center { grid-area: center; }
+#area-right  { grid-area: right; }
+#area-bottom { grid-area: bottom; }
 
-  /* suit colors */
-  .tile.suit-patootie .letter { color: #b02080; }
-  .tile.suit-patootie .label { color: #d060a0; }
-  .tile.suit-manon .letter { color: #1060c0; }
-  .tile.suit-manon .label { color: #4090e0; }
-  .tile.suit-heart .letter { color: #c03030; }
-  .tile.suit-heart .label { color: #e06060; }
-  .tile.suit-star .letter { color: #806000; }
-  .tile.suit-star .label { color: #c09020; }
-  .tile.suit-bonus .letter { font-size: 18px; color: #207040; }
-  .tile.suit-bonus .label { color: #409060; }
+.player-panel { border: 1px solid #3a1860; border-radius: 10px; padding: 10px; background: #1e0d38; }
+.player-panel.active { border-color: #a040ff; box-shadow: 0 0 0 2px #a040ff44; }
+.player-panel.human.active { border-color: #ff80cc; box-shadow: 0 0 0 2px #ff80cc44; }
+.panel-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.panel-name { font-size: 13px; font-weight: 600; color: #c090f0; flex: 1; }
+.panel-name.human-name { color: #ff80cc; }
+.panel-wind { font-size: 11px; background: #3a1860; padding: 2px 7px; border-radius: 4px; color: #c090f0; }
+.panel-score { font-size: 11px; color: #8060a0; }
+.hand-row { display: flex; flex-wrap: wrap; gap: 3px; min-height: 44px; align-items: flex-end; }
+.discards-row { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 5px; }
+.melds-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.meld-group { display: flex; gap: 2px; background: #2a1040; border-radius: 4px; padding: 3px; }
 
-  .tile.blocked { filter: brightness(0.65) saturate(0.5); cursor: not-allowed; }
-  .tile.selected {
-    background: #e8d0ff; border-color: #a040ff;
-    box-shadow: 2px 4px 0px #7020c0, 3px 6px 0px rgba(0,0,0,0.35), 0 0 0 2px #a040ff88;
-    transform: translateY(-3px); z-index: 9999 !important;
-  }
-  .tile:not(.blocked):not(.matched):hover { transform: translateY(-2px); filter: brightness(1.06); }
-  .tile.matched { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .tile.hint {
-    background: #d0ffe8 !important; border-color: #20b070 !important;
-    box-shadow: 2px 4px 0px #0f7050, 3px 6px 0px rgba(0,0,0,0.3), 0 0 0 2px #20b07066 !important;
-    transform: translateY(-2px) !important;
-  }
+.tile {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 34px; height: 44px; border-radius: 5px;
+  border: 1px solid #9060c0; background: #f8f0ff;
+  font-weight: 700; user-select: none; flex-shrink: 0;
+  transition: transform 0.1s;
+}
+.tile .tl { font-size: 15px; line-height: 1; }
+.tile .ts { font-size: 6px; color: #9060c0; }
+.tile.suit-pat .tl { color: #b02080; } .tile.suit-pat .ts { color: #d060a0; }
+.tile.suit-man .tl { color: #1060c0; } .tile.suit-man .ts { color: #4090e0; }
+.tile.suit-heart .tl { color: #c03030; } .tile.suit-heart .ts { color: #e06060; }
+.tile.suit-star .tl { color: #806000; } .tile.suit-star .ts { color: #c09020; }
+.tile.suit-bonus .tl { font-size: 12px; color: #207040; } .tile.suit-bonus .ts { color: #409060; }
+.tile.back { background: #2a1050; border-color: #6030a0; }
+.tile.back .tl { color: #5020a0; font-size: 14px; }
+.tile.sm { width: 22px; height: 28px; border-radius: 3px; }
+.tile.sm .tl { font-size: 9px; } .tile.sm .ts { display: none; }
+.tile.clickable { cursor: pointer; }
+.tile.clickable:hover { transform: translateY(-3px); background: #eedaff; }
+.tile.selected { background: #c8a0ff !important; border-color: #7020c0 !important; transform: translateY(-6px); }
+.tile.claimable { background: #c8ffe0; border-color: #20b070; animation: glow 0.7s infinite alternate; }
+.tile.meld-tile { background: #fff5e8; border-color: #c07030; }
+.tile.meld-tile .tl { color: #804010; }
+@keyframes glow { from { box-shadow: 0 0 0 0 #20b07044; } to { box-shadow: 0 0 0 5px #20b07044; } }
 
-  #msg { text-align: center; padding: 0.8rem 1rem; font-size: 15px; color: #b090d0; min-height: 44px; }
-  #msg.win { color: #ff80cc; font-size: 18px; font-weight: 700; }
-  #msg.fail { color: #e07050; }
+#center-box { border: 1px solid #3a1860; border-radius: 12px; background: #160930; padding: 12px; height: 100%; }
+#wall-info { font-size: 12px; color: #7060a0; margin-bottom: 6px; text-align: center; }
+#last-discard-wrap { text-align: center; margin-bottom: 8px; min-height: 54px; }
+#last-discard-label { font-size: 11px; color: #8060a0; margin-bottom: 4px; }
+#actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; min-height: 36px; }
+#log { font-size: 11px; color: #6050a0; max-height: 100px; overflow-y: auto; }
+#log p { padding: 1px 0; line-height: 1.5; }
 
-  #legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9080b0; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+button { cursor: pointer; border: 1px solid #5a3080; background: #2a1040; color: #e0c0ff; border-radius: 6px; padding: 6px 13px; font-size: 12px; font-weight: 600; }
+button:hover { background: #3a1860; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+button.act-danger { border-color: #802040; background: #2a0818; color: #ffb0c0; }
+button.act-danger:hover { background: #3a1028; }
+button.act-win { border-color: #208040; background: #0a2818; color: #80ffb0; }
+button.act-win:hover { background: #1a3828; }
+button.act-pass { border-color: #4a3060; color: #9070c0; }
+
+#turn-bar { font-size: 13px; font-weight: 600; color: #ff80cc; min-height: 20px; text-align: center; margin: 6px 0 4px; }
+
+#overlay { display: none; position: fixed; inset: 0; background: rgba(8,3,18,0.88); z-index: 100; align-items: center; justify-content: center; }
+#overlay.on { display: flex; }
+#modal { background: #1e0d38; border: 2px solid #a040ff; border-radius: 14px; padding: 2rem 2.5rem; text-align: center; max-width: 380px; }
+#modal h2 { font-size: 20px; color: #e0a0ff; margin-bottom: 0.4rem; }
+#modal p { font-size: 13px; color: #a080c0; margin-bottom: 1rem; line-height: 1.6; }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="header">
-    <div>
-      <h1>Patootie <span>Mahjong</span></h1>
-      <div id="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#b02080"></div> PATOOTIE suit</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1060c0"></div> MANON suit</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#c03030"></div> Hearts</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#806000"></div> Stars</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#207040"></div> Bonus</div>
-      </div>
-    </div>
-    <div>
-      <div id="stats" style="margin-bottom:8px;">
-        Tiles left: <strong id="stat-tiles">-</strong>
-        &nbsp;|&nbsp; Matches: <strong id="stat-matches">0</strong>
-        &nbsp;|&nbsp; Time: <strong id="stat-time">0:00</strong>
-      </div>
-      <div id="controls" style="justify-content:flex-end;display:flex;">
-        <button id="btn-hint">Hint</button>
-        <button id="btn-undo">Undo</button>
-        <button id="btn-new">New Game</button>
-      </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <h1>Patootie <span>Mahjong</span></h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:12px;color:#7060a0;">Round <strong id="round-num" style="color:#c090f0;">1</strong> &nbsp;|&nbsp; <strong id="round-wind" style="color:#c090f0;">East</strong></span>
+      <button onclick="newGame()">New Game</button>
     </div>
   </div>
+  <div id="turn-bar">—</div>
 
-  <div id="board-wrap">
-    <div id="board"></div>
+  <div id="table">
+    <div id="area-top">
+      <div class="player-panel" id="panel-2">
+        <div class="panel-header">
+          <span class="panel-name" id="pname-2">🤖 AI Patootie</span>
+          <span class="panel-wind" id="pwind-2">西</span>
+          <span class="panel-score" id="pscore-2">0 pts</span>
+        </div>
+        <div class="hand-row" id="hand-2"></div>
+        <div class="melds-row" id="melds-2"></div>
+        <div class="discards-row" id="disc-2"></div>
+      </div>
+    </div>
+
+    <div id="area-left">
+      <div class="player-panel human" id="panel-1">
+        <div class="panel-header">
+          <span class="panel-name human-name" id="pname-1">Player 1</span>
+          <span class="panel-wind" id="pwind-1">南</span>
+          <span class="panel-score" id="pscore-1">0 pts</span>
+        </div>
+        <div class="hand-row" id="hand-1"></div>
+        <div class="melds-row" id="melds-1"></div>
+        <div class="discards-row" id="disc-1"></div>
+      </div>
+    </div>
+
+    <div id="area-center">
+      <div id="center-box">
+        <div id="wall-info">Wall: — tiles</div>
+        <div id="last-discard-wrap">
+          <div id="last-discard-label"></div>
+          <div id="last-discard-tile"></div>
+        </div>
+        <div id="actions"></div>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <div id="area-right">
+      <div class="player-panel human" id="panel-3">
+        <div class="panel-header">
+          <span class="panel-name human-name" id="pname-3">Player 2</span>
+          <span class="panel-wind" id="pwind-3">北</span>
+          <span class="panel-score" id="pscore-3">0 pts</span>
+        </div>
+        <div class="hand-row" id="hand-3"></div>
+        <div class="melds-row" id="melds-3"></div>
+        <div class="discards-row" id="disc-3"></div>
+      </div>
+    </div>
+
+    <div id="area-bottom">
+      <div class="player-panel human" id="panel-0">
+        <div class="panel-header">
+          <span class="panel-name human-name" id="pname-0">Player 1 (East/Dealer)</span>
+          <span class="panel-wind" id="pwind-0">東</span>
+          <span class="panel-score" id="pscore-0">0 pts</span>
+        </div>
+        <div class="hand-row" id="hand-0"></div>
+        <div class="melds-row" id="melds-0"></div>
+        <div class="discards-row" id="disc-0"></div>
+      </div>
+    </div>
   </div>
-  <div id="msg">Select a free tile to begin!</div>
+</div>
+
+<div id="overlay">
+  <div id="modal">
+    <h2 id="modal-title">—</h2>
+    <p id="modal-body"></p>
+    <button onclick="dismissModal()">Continue ▶</button>
+  </div>
 </div>
 
 <script>
-// ── Tile definitions ─────────────────────────────────────────────────────────
-// PATOOTIE suit: 8 letters × 4 copies = 32 tiles
-const PATOOTIE = ['P','A','T','O','O','T','I','E'];
-// MANON suit: 5 letters × 4 copies = 20 tiles  (M,A,N,O,N — duplicates match)
-const MANON    = ['M','A','N','O','N'];
-// Hearts: ♥ symbols 1-9 × 4 = 36 tiles
-const HEARTS   = ['♥1','♥2','♥3','♥4','♥5','♥6','♥7','♥8','♥9'];
-// Stars: ★ symbols 1-9 × 4 = 36 tiles
-const STARS    = ['★1','★2','★3','★4','★5','★6','★7','★8','★9'];
-// Bonus (flowers/seasons style — match any within group): 4+4 = 8 tiles
-const FLOWERS  = ['🌸','🌺','🌼','🌻'];
-const GEMS     = ['💎','💜','✨','🔮'];
+// ── Tile data ─────────────────────────────────────────────────────────────────
+const SUITS_SEQ = ['heart','star'];
+const WIND_CHARS = ['東','南','西','北'];
+const WIND_NAMES = ['East','South','West','North'];
+const PNAMES = ['Player 1 (East)','Player 1','🤖 AI Patootie','Player 2'];
+const IS_HUMAN = [true, true, false, false]; // 0=bottom, 1=left, 2=top AI, 3=right human
 
-function makePool(){
-  const pool=[];
-  // PATOOTIE — letter at index i matches same index (so both 'T' at index 2 match each other, both 'O' at 3&4...)
-  // We pair by position so T(idx2) matches T(idx2), O(idx3) matches O(idx3), etc.
-  PATOOTIE.forEach((l,i)=>{
-    for(let n=0;n<4;n++) pool.push({key:'pat_'+i, disp:l, sub:'patootie', suit:'suit-patootie'});
-  });
-  // MANON — same approach, pair by position
-  MANON.forEach((l,i)=>{
-    for(let n=0;n<4;n++) pool.push({key:'man_'+i, disp:l, sub:'manon', suit:'suit-manon'});
-  });
-  // Hearts
-  HEARTS.forEach((h,i)=>{
-    for(let n=0;n<4;n++) pool.push({key:'heart_'+i, disp:h[1], sub:'♥', suit:'suit-heart'});
-  });
-  // Stars
-  STARS.forEach((s,i)=>{
-    for(let n=0;n<4;n++) pool.push({key:'star_'+i, disp:s[1], sub:'★', suit:'suit-star'});
-  });
-  // Bonus — flowers match any flower, gems match any gem
-  FLOWERS.forEach(f=>pool.push({key:'flower', disp:f, sub:'flower', suit:'suit-bonus'}));
-  GEMS.forEach(g=>pool.push({key:'gem', disp:g, sub:'gem', suit:'suit-bonus'}));
-  return pool;
+function buildWall(){
+  const t = [];
+  // PATOOTIE suit (8 ranks x4 = 32)
+  const PAT = ['P','A','T','O','O','T','I','E'];
+  PAT.forEach((d,r) => { for(let i=0;i<4;i++) t.push({suit:'pat',rank:r,d,sub:'patootie'}); });
+  // MANON suit (5 ranks x4 = 20)
+  const MAN = ['M','A','N','O','N'];
+  MAN.forEach((d,r) => { for(let i=0;i<4;i++) t.push({suit:'man',rank:r,d,sub:'manon'}); });
+  // HEART suit (9 ranks x4 = 36)
+  for(let r=0;r<9;r++) for(let i=0;i<4;i++) t.push({suit:'heart',rank:r,d:String(r+1),sub:'♥'});
+  // STAR suit (9 ranks x4 = 36)
+  for(let r=0;r<9;r++) for(let i=0;i<4;i++) t.push({suit:'star',rank:r,d:String(r+1),sub:'★'});
+  // Bonus (flowers + gems, 4+4=8)
+  ['🌸','🌺','🌼','🌻'].forEach((d,r) => t.push({suit:'bonus',rank:r,d,sub:'flower',bonus:true}));
+  ['💎','💜','✨','🔮'].forEach((d,r) => t.push({suit:'bonus',rank:r+4,d,sub:'gem',bonus:true}));
+  return t;
 }
 
-function sameTile(a,b){
-  if(a.key==='flower'&&b.key==='flower') return true;
-  if(a.key==='gem'&&b.key==='gem') return true;
-  return a.key===b.key;
-}
+function same(a,b){ return a.suit===b.suit && a.rank===b.rank; }
 
-// ── Layout (turtle) ──────────────────────────────────────────────────────────
-const LAYOUT=[];
-(function(){
-  function row(l,r,c0,c1){ for(let c=c0;c<=c1;c++) LAYOUT.push([l,r,c]); }
-  for(let r=0;r<8;r++) row(0,r,0,13);
-  LAYOUT.push([0,3,-1],[0,4,-1],[0,3,14],[0,4,14]);
-  for(let r=1;r<7;r++) row(1,r,1,12);
-  for(let r=2;r<6;r++) row(2,r,2,11);
-  for(let r=2;r<6;r++) row(3,r,3,10);
-  for(let r=3;r<5;r++) row(4,r,4,9);
-  for(let r=3;r<5;r++) row(5,r,5,8);
-  LAYOUT.push([6,3,6],[6,3,7],[6,4,6],[6,4,7]);
-  LAYOUT.push([7,3,6],[7,4,6]);
-})();
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=0|Math.random()*(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-const TILE_W=50, TILE_H=62, OFF=6;
-let tiles=[], selected=null, history=[], matches=0, timer=0, timerInt=null;
-
-function shuffle(arr){
-  for(let i=arr.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
+// ── Win detection ─────────────────────────────────────────────────────────────
+function canWin(hand, melds){
+  const tiles = hand.filter(t=>!t.bonus);
+  const need = 4 - melds.length;
+  if(tiles.length !== need*3+2) return false;
+  // Try every possible pair
+  for(let i=0;i<tiles.length;i++){
+    for(let j=i+1;j<tiles.length;j++){
+      if(same(tiles[i],tiles[j])){
+        const rest = tiles.filter((_,k)=>k!==i&&k!==j);
+        if(findSets([...rest], need)) return true;
+      }
+    }
   }
-  return arr;
-}
-
-function isBlocked(t){
-  if(t.matched) return true;
-  const left =tiles.some(o=>!o.matched&&o.layer===t.layer&&o.row===t.row&&o.col===t.col-1);
-  const right=tiles.some(o=>!o.matched&&o.layer===t.layer&&o.row===t.row&&o.col===t.col+1);
-  const above=tiles.some(o=>!o.matched&&o.layer===t.layer+1&&Math.abs(o.row-t.row)<=0&&Math.abs(o.col-t.col)<=1);
-  return (left&&right)||above;
-}
-
-function buildBoard(){
-  const board=document.getElementById('board');
-  board.innerHTML='';
-  const pool=shuffle(makePool()).slice(0,LAYOUT.length);
-  while(pool.length<LAYOUT.length) pool.push(pool[pool.length%pool.length]);
-
-  tiles=LAYOUT.map((pos,i)=>({
-    id:i, layer:pos[0], row:pos[1], col:pos[2],
-    key:pool[i].key, disp:pool[i].disp, sub:pool[i].sub, suit:pool[i].suit,
-    matched:false, el:null
-  }));
-
-  const minC=Math.min(...LAYOUT.map(p=>p[2]));
-  const maxC=Math.max(...LAYOUT.map(p=>p[2]));
-  const maxR=Math.max(...LAYOUT.map(p=>p[1]));
-  const maxL=Math.max(...LAYOUT.map(p=>p[0]));
-  const bw=(maxC-minC+2)*TILE_W+maxL*OFF+40;
-  const bh=(maxR+2)*TILE_H+maxL*OFF+40;
-  board.style.width=bw+'px'; board.style.height=bh+'px';
-
-  tiles.forEach(t=>{
-    const el=document.createElement('div');
-    el.className='tile '+t.suit;
-    // letter
-    const letterEl=document.createElement('div');
-    letterEl.className='letter';
-    letterEl.textContent=t.disp;
-    // sublabel
-    const labelEl=document.createElement('div');
-    labelEl.className='label';
-    labelEl.textContent=t.sub;
-    el.appendChild(letterEl);
-    el.appendChild(labelEl);
-
-    const x=(t.col-minC)*TILE_W+t.layer*OFF+20;
-    const y=t.row*TILE_H-t.layer*OFF+20;
-    el.style.left=x+'px'; el.style.top=y+'px';
-    el.style.zIndex=(t.layer+1)*20+(7-t.row);
-    el.addEventListener('click',()=>clickTile(t));
-    board.appendChild(el);
-    t.el=el;
-  });
-
-  selected=null; history=[]; matches=0;
-  document.getElementById('stat-matches').textContent='0';
-  document.getElementById('stat-tiles').textContent=tiles.length;
-  setMsg('Select a free tile to begin!','');
-  updateAll();
-  startTimer();
-}
-
-function updateAll(){
-  tiles.forEach(t=>{
-    if(!t.el) return;
-    if(t.matched){ t.el.classList.add('matched'); return; }
-    t.el.classList.remove('matched','selected','hint');
-    t.el.classList.toggle('blocked',isBlocked(t));
-  });
-  if(selected&&!selected.matched) selected.el.classList.add('selected');
-}
-
-function clickTile(t){
-  if(t.matched||isBlocked(t)){ setMsg('That tile is blocked — try a free one.',''); return; }
-  if(selected===null){ selected=t; updateAll(); return; }
-  if(selected===t){ selected=null; updateAll(); return; }
-  if(sameTile(selected,t)){
-    history.push([selected,t]);
-    selected.matched=true; t.matched=true;
-    matches++;
-    document.getElementById('stat-matches').textContent=matches;
-    document.getElementById('stat-tiles').textContent=tiles.filter(x=>!x.matched).length;
-    selected=null; updateAll();
-    const left=tiles.filter(x=>!x.matched).length;
-    if(left===0){ clearInterval(timerInt); setMsg('🎉 You cleared the board! Patootie forever!','win'); return; }
-    if(!hasMoves()){ clearInterval(timerInt); setMsg('No more moves — start a new game!','fail'); return; }
-    setMsg('Nice match! Keep going ✨','');
-  } else {
-    selected=t; updateAll();
-    setMsg('No match — try a different tile.','');
-  }
-}
-
-function hasMoves(){
-  const free=tiles.filter(t=>!t.matched&&!isBlocked(t));
-  for(let i=0;i<free.length;i++)
-    for(let j=i+1;j<free.length;j++)
-      if(sameTile(free[i],free[j])) return true;
   return false;
 }
 
-function doHint(){
-  const free=tiles.filter(t=>!t.matched&&!isBlocked(t));
-  for(let i=0;i<free.length;i++)
-    for(let j=i+1;j<free.length;j++)
-      if(sameTile(free[i],free[j])){
-        [free[i],free[j]].forEach(t=>{
-          t.el.classList.add('hint');
-          setTimeout(()=>t.el.classList.remove('hint'),1600);
-        });
-        setMsg('Hint: those two match!','');
-        return;
-      }
-  setMsg('No moves left — start a new game!','fail');
+function findSets(tiles, n){
+  if(n===0) return tiles.length===0;
+  if(tiles.length<3) return false;
+  const t0 = tiles[0];
+  // Try pong
+  const pi = [];
+  for(let i=0;i<tiles.length&&pi.length<3;i++) if(same(tiles[i],t0)) pi.push(i);
+  if(pi.length>=3){
+    if(findSets(tiles.filter((_,k)=>!pi.slice(0,3).includes(k)), n-1)) return true;
+  }
+  // Try chow (sequences only in heart/star)
+  if(SUITS_SEQ.includes(t0.suit)){
+    const s=t0.suit, r=t0.rank;
+    for(const [r1,r2] of [[r+1,r+2],[r-1,r+1],[r-2,r-1]]){
+      if(r1<0||r2<0||r1>8||r2>8) continue;
+      const i1 = tiles.findIndex((t,i)=>i>0&&t.suit===s&&t.rank===r1);
+      if(i1<0) continue;
+      const i2 = tiles.findIndex((t,i)=>i>0&&i!==i1&&t.suit===s&&t.rank===r2);
+      if(i2<0) continue;
+      if(findSets(tiles.filter((_,k)=>k!==0&&k!==i1&&k!==i2), n-1)) return true;
+    }
+  }
+  return false;
 }
 
-function setMsg(txt,cls){
-  const el=document.getElementById('msg');
-  el.textContent=txt; el.className=cls||'';
+function hasPong(hand, tile){ return hand.filter(t=>same(t,tile)).length>=2; }
+function hasKong(hand, tile){ return hand.filter(t=>same(t,tile)).length>=3; }
+function hasChow(hand, tile){
+  if(!SUITS_SEQ.includes(tile.suit)) return false;
+  const s=tile.suit, r=tile.rank;
+  const has=rk=>hand.some(t=>t.suit===s&&t.rank===rk);
+  return (has(r-2)&&has(r-1))||(has(r-1)&&has(r+1))||(has(r+1)&&has(r+2));
 }
 
-function startTimer(){
-  clearInterval(timerInt); timer=0;
-  document.getElementById('stat-time').textContent='0:00';
-  timerInt=setInterval(()=>{
-    timer++;
-    const m=Math.floor(timer/60), s=timer%60;
-    document.getElementById('stat-time').textContent=m+':'+(s<10?'0':'')+s;
-  },1000);
+// ── Game state ────────────────────────────────────────────────────────────────
+let wall=[], wi=0, hands=[[],[],[],[]], melds=[[],[],[],[]], discs=[[],[],[],[]];
+let scores=[0,0,0,0], cur=0, lastDisc=null, lastDiscBy=-1;
+let roundNum=1, dead=false, claiming=false, claimTO=null;
+let selIdx=-1, mustDiscard=false;
+
+function newGame(){
+  wall=shuffle(buildWall()); wi=0;
+  hands=[[],[],[],[]]; melds=[[],[],[],[]]; discs=[[],[],[],[]];
+  lastDisc=null; lastDiscBy=-1; dead=false; claiming=false;
+  selIdx=-1; mustDiscard=false; cur=0;
+  clearTimeout(claimTO);
+  for(let p=0;p<4;p++){ dealN(p,13); absorbBonus(p); }
+  logMsg('New game! East deals. Players 1 & 2 are human, AI controls West & North.');
+  updateScores();
+  startTurn(0);
 }
 
-document.getElementById('btn-hint').addEventListener('click',doHint);
-document.getElementById('btn-undo').addEventListener('click',()=>{
-  if(!history.length){ setMsg('Nothing to undo.',''); return; }
-  const [a,b]=history.pop();
-  a.matched=false; b.matched=false;
-  matches--;
-  document.getElementById('stat-matches').textContent=matches;
-  document.getElementById('stat-tiles').textContent=tiles.filter(x=>!x.matched).length;
-  selected=null; updateAll();
-  setMsg('Move undone.','');
-});
-document.getElementById('btn-new').addEventListener('click',()=>{ clearInterval(timerInt); buildBoard(); });
+function dealOne(p){ if(wi<wall.length){ hands[p].push(wall[wi++]); return true; } return false; }
+function dealN(p,n){ for(let i=0;i<n;i++) dealOne(p); }
+function absorbBonus(p){
+  let found=true;
+  while(found){ found=false;
+    for(let i=hands[p].length-1;i>=0;i--){
+      if(hands[p][i].bonus){ melds[p].push([hands[p].splice(i,1)[0]]); dealOne(p); found=true; break; }
+    }
+  }
+}
 
-buildBoard();
+function startTurn(p){
+  cur=p; mustDiscard=false; selIdx=-1; claiming=false;
+  clearTimeout(claimTO);
+  if(wi>=wall.length){ endRound('Wall exhausted — draw!'); return; }
+  const drawn=wall[wi++];
+  hands[p].push(drawn);
+  absorbBonus(p);
+  logMsg((IS_HUMAN[p]?'':'🤖 ')+playerName(p)+' draws.');
+  mustDiscard=true;
+  renderAll();
+  if(!IS_HUMAN[p]) setTimeout(()=>aiAct(p), 900);
+  else renderActions();
+}
+
+function playerName(p){
+  if(p===0) return 'Player 1 (East)';
+  if(p===1) return 'Player 1';
+  if(p===2) return 'AI Patootie';
+  return 'Player 2';
+}
+
+// ── AI ────────────────────────────────────────────────────────────────────────
+function aiAct(p){
+  if(dead) return;
+  if(canWin(hands[p],melds[p])){ doWin(p,-1); return; }
+  doDiscard(p, aiPickDiscard(p));
+}
+
+function aiPickDiscard(p){
+  const h=hands[p].filter(t=>!t.bonus);
+  let best=0, bestScore=9999;
+  h.forEach((t,i)=>{
+    let sc=0;
+    h.forEach((o,j)=>{ if(i===j) return;
+      if(same(t,o)) sc+=10;
+      if(SUITS_SEQ.includes(t.suit)&&t.suit===o.suit&&Math.abs(t.rank-o.rank)<=2) sc+=5;
+    });
+    if(sc<bestScore){ bestScore=sc; best=i; }
+  });
+  return hands[p].indexOf(h[best]);
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function doDiscard(p, idx){
+  const tile=hands[p].splice(idx,1)[0];
+  discs[p].push(tile);
+  lastDisc=tile; lastDiscBy=p; selIdx=-1; mustDiscard=false;
+  logMsg((IS_HUMAN[p]?'':'🤖 ')+playerName(p)+' discards '+tile.d+' ('+tile.sub+')');
+  renderAll();
+  openClaims(p);
+}
+
+function openClaims(from){
+  if(dead) return;
+  const avail=[];
+  for(let p=0;p<4;p++){
+    if(p===from) continue;
+    if(canWin([...hands[p],lastDisc],melds[p])) avail.push({p,type:'win'});
+    else if(hasKong(hands[p],lastDisc)) avail.push({p,type:'kong'});
+    else if(hasPong(hands[p],lastDisc)) avail.push({p,type:'pong'});
+    else if(p===(from+1)%4&&hasChow(hands[p],lastDisc)) avail.push({p,type:'chow'});
+  }
+  claiming=true; renderAll();
+  const humanAvail=avail.filter(c=>IS_HUMAN[c.p]);
+  const aiAvail=avail.filter(c=>!IS_HUMAN[c.p]);
+  if(humanAvail.length>0){
+    renderClaimBtns(humanAvail, from);
+    claimTO=setTimeout(()=>resolveClaims(aiAvail,from), 9000);
+  } else {
+    claimTO=setTimeout(()=>resolveClaims(aiAvail,from), 500);
+  }
+}
+
+function resolveClaims(aiAvail, from){
+  clearTimeout(claimTO); claiming=false;
+  const w=aiAvail.find(c=>c.type==='win');
+  if(w){ doWin(w.p,from); return; }
+  const k=aiAvail.find(c=>c.type==='kong');
+  if(k){ applyClaim(k.p,'kong',from); return; }
+  const po=aiAvail.find(c=>c.type==='pong');
+  if(po){ applyClaim(po.p,'pong',from); return; }
+  startTurn((from+1)%4);
+}
+
+function applyClaim(p, type, from){
+  hands[p].push(lastDisc);
+  const tile=lastDisc;
+  if(type==='pong'||type==='kong'){
+    const cnt=type==='kong'?4:3;
+    const idx=[];
+    for(let i=0;i<hands[p].length&&idx.length<cnt;i++) if(same(hands[p][i],tile)) idx.push(i);
+    const meldTiles=idx.map(i=>hands[p][i]);
+    hands[p]=hands[p].filter((_,i)=>!idx.includes(i));
+    melds[p].push(meldTiles);
+    logMsg((IS_HUMAN[p]?'':'🤖 ')+playerName(p)+' → '+type.toUpperCase()+'!');
+    if(type==='kong'){ if(!dealOne(p)){ endRound('Wall empty'); return; } absorbBonus(p); }
+  } else if(type==='chow'){
+    const s=tile.suit, r=tile.rank;
+    for(const [r1,r2] of [[r+1,r+2],[r-1,r+1],[r-2,r-1]]){
+      if(r1<0||r2<0||r1>8||r2>8) continue;
+      const i1=hands[p].findIndex((t,i)=>t.suit===s&&t.rank===r1);
+      if(i1<0) continue;
+      const tmp=hands[p].filter((_,i)=>i!==i1);
+      const i2off=tmp.findIndex(t=>t.suit===s&&t.rank===r2);
+      if(i2off<0) continue;
+      const t1=hands[p].splice(i1,1)[0];
+      const i2=hands[p].findIndex(t=>t.suit===s&&t.rank===r2);
+      const t2=hands[p].splice(i2,1)[0];
+      const ti=hands[p].findIndex(t=>same(t,tile));
+      const tc=hands[p].splice(ti,1)[0];
+      melds[p].push([t1,tc,t2].sort((a,b)=>a.rank-b.rank));
+      logMsg((IS_HUMAN[p]?'':'🤖 ')+playerName(p)+' → CHOW!');
+      break;
+    }
+  }
+  cur=p; mustDiscard=true; selIdx=-1; claiming=false;
+  renderAll();
+  if(!IS_HUMAN[p]) setTimeout(()=>{ doDiscard(p,aiPickDiscard(p)); }, 700);
+  else renderActions();
+}
+
+function doWin(p, from){
+  dead=true; claiming=false; clearTimeout(claimTO);
+  const pts=8+melds[p].length*2+(p===0?4:0);
+  scores[p]+=pts;
+  if(from>=0) scores[from]-=Math.floor(pts/2);
+  updateScores();
+  renderAll();
+  showModal('🎉 '+(IS_HUMAN[p]?playerName(p):'🤖 '+playerName(p))+' wins!',
+    'Winning hand! +'+pts+' points.\nRound '+(roundNum++)+' complete.');
+  logMsg(playerName(p)+' wins round '+roundNum+'!');
+}
+
+function endRound(msg){
+  dead=true; claiming=false; clearTimeout(claimTO);
+  showModal('Round over', msg); roundNum++;
+  logMsg(msg);
+}
+
+// ── Human UI ──────────────────────────────────────────────────────────────────
+function selectTile(p,i){
+  if(p!==cur||!IS_HUMAN[p]||!mustDiscard) return;
+  selIdx=i; renderAll(); renderActions();
+}
+
+function humanDiscard(){
+  if(selIdx<0) return;
+  doDiscard(cur, selIdx);
+}
+
+function humanClaim(p, type, from){
+  clearTimeout(claimTO); claiming=false;
+  if(type==='pass'){ resolveClaims([],from); return; }
+  if(type==='win'){ doWin(p,from); return; }
+  applyClaim(p, type, from);
+}
+
+function humanDeclareWin(){
+  if(!canWin(hands[cur],melds[cur])){ logMsg('Not a winning hand yet!'); return; }
+  doWin(cur,-1);
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function mkTile(t, opts={}){
+  const el=document.createElement('div');
+  let cls='tile suit-'+t.suit;
+  if(opts.back) cls+=' back';
+  if(opts.sm) cls+=' sm';
+  if(opts.click) cls+=' clickable';
+  if(opts.sel) cls+=' selected';
+  if(opts.claim) cls+=' claimable';
+  if(opts.meld) cls+=' meld-tile';
+  el.className=cls;
+  if(opts.back) el.innerHTML='<div class="tl">✦</div>';
+  else el.innerHTML='<div class="tl">'+t.d+'</div><div class="ts">'+t.sub+'</div>';
+  if(opts.onClick) el.addEventListener('click',opts.onClick);
+  return el;
+}
+
+function renderHand(p){
+  const el=document.getElementById('hand-'+p);
+  el.innerHTML='';
+  const isH=IS_HUMAN[p], isActive=p===cur&&mustDiscard&&isH;
+  hands[p].forEach((t,i)=>{
+    if(!isH){ el.appendChild(mkTile(t,{back:true})); return; }
+    el.appendChild(mkTile(t,{click:isActive,sel:selIdx===i,
+      onClick:isActive?()=>selectTile(p,i):null}));
+  });
+}
+
+function renderMelds(p){
+  const el=document.getElementById('melds-'+p);
+  el.innerHTML='';
+  melds[p].forEach(m=>{
+    const g=document.createElement('div'); g.className='meld-group';
+    m.forEach(t=>g.appendChild(mkTile(t,{sm:true,meld:true})));
+    el.appendChild(g);
+  });
+}
+
+function renderDiscs(p){
+  const el=document.getElementById('disc-'+p);
+  el.innerHTML='';
+  discs[p].forEach(t=>el.appendChild(mkTile(t,{sm:true})));
+}
+
+function renderCenter(){
+  document.getElementById('wall-info').textContent='Wall: '+(wall.length-wi)+' tiles remaining';
+  const ldl=document.getElementById('last-discard-label');
+  const ldt=document.getElementById('last-discard-tile');
+  if(lastDisc){
+    ldl.textContent='Last discard ('+playerName(lastDiscBy)+'):';
+    ldt.innerHTML='';
+    ldt.appendChild(mkTile(lastDisc,{claim:claiming}));
+  } else { ldl.textContent=''; ldt.innerHTML=''; }
+}
+
+function renderPanels(){
+  const isAct=p=>p===cur&&!dead;
+  for(let p=0;p<4;p++){
+    const panel=document.getElementById('panel-'+p);
+    let cls='player-panel';
+    if(IS_HUMAN[p]) cls+=' human';
+    if(isAct(p)) cls+=' active';
+    panel.className=cls;
+    document.getElementById('pwind-'+p).textContent=WIND_CHARS[p];
+  }
+}
+
+function renderActions(){
+  const el=document.getElementById('actions');
+  el.innerHTML='';
+  if(dead) return;
+  const p=cur;
+  if(!IS_HUMAN[p]) return;
+  if(mustDiscard){
+    const db=document.createElement('button');
+    db.textContent=selIdx>=0?'Discard selected':'← Pick a tile to discard';
+    db.disabled=selIdx<0;
+    db.className='act-danger';
+    db.onclick=humanDiscard;
+    el.appendChild(db);
+    if(canWin(hands[p],melds[p])){
+      const wb=document.createElement('button');
+      wb.textContent='Declare Win 🏆';
+      wb.className='act-win';
+      wb.onclick=humanDeclareWin;
+      el.appendChild(wb);
+    }
+  }
+}
+
+function renderClaimBtns(claims, from){
+  const el=document.getElementById('actions');
+  el.innerHTML='';
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font-size:11px;color:#ff80cc;width:100%;text-align:center;margin-bottom:4px;';
+  lbl.textContent='Claim the discard?';
+  el.appendChild(lbl);
+  claims.forEach(c=>{
+    const b=document.createElement('button');
+    b.textContent=c.type.toUpperCase()+' ('+playerName(c.p)+')';
+    if(c.type==='win') b.className='act-win';
+    b.onclick=()=>humanClaim(c.p,c.type,from);
+    el.appendChild(b);
+  });
+  const pb=document.createElement('button');
+  pb.textContent='Pass'; pb.className='act-pass';
+  pb.onclick=()=>humanClaim(-1,'pass',from);
+  el.appendChild(pb);
+}
+
+function updateTurnBar(){
+  const b=document.getElementById('turn-bar');
+  if(dead){ b.textContent='Round over'; return; }
+  b.textContent=(IS_HUMAN[cur]?'👤 ':'🤖 ')+playerName(cur)+"'s turn ("+WIND_NAMES[cur]+')';
+}
+
+function updateScores(){
+  for(let p=0;p<4;p++) document.getElementById('pscore-'+p).textContent=scores[p]+' pts';
+  document.getElementById('round-num').textContent=roundNum;
+  document.getElementById('round-wind').textContent=WIND_NAMES[(roundNum-1)%4];
+}
+
+function renderAll(){
+  for(let p=0;p<4;p++){ renderHand(p); renderMelds(p); renderDiscs(p); }
+  renderCenter(); renderPanels(); updateTurnBar();
+  if(mustDiscard&&IS_HUMAN[cur]&&!claiming) renderActions();
+  else if(!claiming) document.getElementById('actions').innerHTML='';
+}
+
+function logMsg(msg){
+  const el=document.getElementById('log');
+  const d=document.createElement('p'); d.textContent=msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+function showModal(title,body){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').textContent=body;
+  document.getElementById('overlay').classList.add('on');
+}
+function dismissModal(){
+  document.getElementById('overlay').classList.remove('on');
+  if(roundNum<=12) newGame();
+}
+
+newGame();
 </script>
 </body>
 </html>
